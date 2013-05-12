@@ -21,3 +21,14 @@ Support Matrix
 +--------------------------+----------+----------+
 
 Other framework support may be community contributed.
+
+Things to do
+--------------
+
+* Make the merchant (base) library framework agnostic ie it will not contain
+  any forms, urlpatterns etc and will act as a base for the frameworks
+* Write separate documentation for each framework
+* Improve the examples for each framework
+* Upload each of the packages to pypi
+* Add more items when I recollect them...
+

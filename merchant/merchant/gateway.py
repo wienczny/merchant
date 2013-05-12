@@ -1,9 +1,8 @@
-from django.utils.importlib import import_module
-from django.conf import settings
+from importlib import import_module
 from .utils.credit_card import CardNotSupported
+import sys
 
 gateway_cache = {}
-
 
 class GatewayModuleNotFound(Exception):
     pass
@@ -21,7 +20,7 @@ class Gateway(object):
     """Sub-classes to inherit from this and implement the below methods"""
 
     # To indicate if the gateway is in test mode or not
-    test_mode = getattr(settings, "MERCHANT_TEST_MODE", True)
+    test_mode = True
 
     # The below are optional attributes to be implemented and used by subclases.
     #
@@ -94,7 +93,6 @@ class Gateway(object):
         profile information on the gateway"""
         raise NotImplementedError
 
-
 def get_gateway(gateway, *args, **kwargs):
     """
     Return a gateway instance specified by `gateway` name.
@@ -112,10 +110,12 @@ def get_gateway(gateway, *args, **kwargs):
         # Let's actually load it (it's not in the cache)
         gateway_filename = "%s_gateway" % gateway
         gateway_module = None
-        for app in settings.INSTALLED_APPS:
+        lookup_path = ['billing']
+        lookup_path.extend(sys.path)
+        for pkg in lookup_path:
             try:
-                gateway_module = import_module(".gateways.%s" % gateway_filename, package=app)
-            except ImportError:
+                gateway_module = import_module(".gateways.%s" % gateway_filename, package=pkg)
+            except (ImportError, TypeError):
                 pass
         if not gateway_module:
             raise GatewayModuleNotFound("Missing gateway: %s" % (gateway))

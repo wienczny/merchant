@@ -1,0 +1,59 @@
+{% extends "billing/main.html" %}
+
+{% block content %}
+{{ super.block }}
+
+<div class="payment-errors"></div>
+<script type="text/javascript" src="//code.jquery.com/jquery.min.js"></script>
+<script type="text/javascript" src="https://js.stripe.com/v1/"></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    Stripe.setPublishableKey('{{ integration.publishable_key }}');
+
+    function stripeResponseHandler(status, response) {
+      if (response.error) {
+        $(".payment-errors").html(response.error.message);
+      } else {
+        console.log(response);
+        var token = response['id'];
+        $("#payment-form input[name=stripeToken]").val(token);
+        $("#payment-form").attr("action", "{{ url_for('stripe_transaction') }}");
+        $("#payment-form").get(0).submit();
+      }
+  }
+
+  $("#payment-form").submit(function(event) {
+    $(".submit-button").attr("disabled", "disabled");
+    var amount = $("#amount").val(); //amount you want to charge in cents
+    Stripe.createToken({
+      number: $("#credit_card_number").val(),
+      cvc: $("#credit_card_cvc").val(),
+      exp_month: $("#credit_card_expiration_month").val(),
+      exp_year: $("#credit_card_expiration_year").val()
+    }, amount, stripeResponseHandler);
+    return false;
+    });
+  });
+</script>
+<form class="form-horizontal well" method="post" id="payment-form">
+  <fieldset>
+    <legend>Using Payment Backend: Stripe</legend>
+    {% for field in integration.generate_form() %}
+    {% if not field.widget.input_type == "hidden" %}<p>{{ field.label }}:</p>{% endif %}
+    <p>
+      {% if not field.widget.input_type == "select" %}
+        {{ field }}
+      {% else %}
+        {% for option in field %}
+          {{ option }}
+        {% endfor %}
+      {% endif %}</p>
+    {% endfor %}
+    <input type="hidden" name="stripeToken" value="" />
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Submit</button>
+      <button type="reset" class="btn">Cancel</button>
+    </div>
+  </fieldset>
+</form>
+{% endblock %}

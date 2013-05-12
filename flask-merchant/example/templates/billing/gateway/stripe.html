@@ -1,0 +1,15 @@
+{% extends "billing/main.html" %}
+
+{% block content %}
+{{ super.block }}
+<form method="post" action="{{ url_for('s2s_stripe') }}">
+  <p>First Name: <input type="text" name="first_name" value="John" /></p>
+  <p>Last Name: <input type="text" name="last_name" value="Doe" /></p>
+  <p>Month: <input type="text" name="month" value="5" /></p>
+  <p>Year: <input type="text" name="year" value="2013" /></p>
+  <p>CC #: <input type="text" name="number" value="4242424242424242" /></p>
+  <p>CC Type: <input type="text" name="card_type" value="visa" /></p>
+  <p>CVV: <input type="text" name="cvv" value="100" /></p>
+  <p><input type="submit" value="Pay" /></p>
+</form>
+{% endblock %}

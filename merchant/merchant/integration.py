@@ -1,7 +1,7 @@
-from django.utils.importlib import import_module
-from django.conf import settings
-from django.conf.urls import patterns
+from importlib import import_module
+import sys
 
+integration_cache = {}
 
 class IntegrationModuleNotFound(Exception):
     pass
@@ -10,15 +10,13 @@ class IntegrationModuleNotFound(Exception):
 class IntegrationNotConfigured(Exception):
     pass
 
-integration_cache = {}
-
 
 class Integration(object):
     """Base Integration class that needs to be subclassed by
     implementations"""
     # The mode of the gateway. Looks into the settings else
     # defaults to True
-    test_mode = getattr(settings, "MERCHANT_TEST_MODE", True)
+    test_mode = True
 
     # Name of the integration.
     display_name = 'Base Integration'
@@ -45,15 +43,6 @@ class Integration(object):
         # Modified by subclasses
         raise NotImplementedError
 
-    def get_urls(self):
-        # Method must be subclassed
-        urlpatterns = patterns('')
-        return urlpatterns
-
-    @property
-    def urls(self):
-        return self.get_urls()
-
 
 def get_integration(integration, *args, **kwargs):
     """Return a integration instance specified by `integration` name"""
@@ -63,10 +52,12 @@ def get_integration(integration, *args, **kwargs):
     if not klass:
         integration_filename = "%s_integration" % integration
         integration_module = None
-        for app in settings.INSTALLED_APPS:
+        lookup_path = ['billing']
+        lookup_path.extend(sys.path)
+        for pkg in lookup_path:
             try:
-                integration_module = import_module(".integrations.%s" % integration_filename, package=app)
-            except ImportError:
+                integration_module = import_module(".integrations.%s" % integration_filename, package=pkg)
+            except (ImportError, TypeError):
                 pass
         if not integration_module:
             raise IntegrationModuleNotFound("Missing integration: %s" % (integration))

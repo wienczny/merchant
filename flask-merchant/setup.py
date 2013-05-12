@@ -110,25 +110,26 @@ def find_package_data(
     return out
 
 setup(
-    name="django-merchant",
+    name="flask-merchant",
     version=get_version(),
-    description="A Django app that provides helpers for multiple pluggable payment backends.",
+    description="A flask wrapper around merchant, a python app that handles "
+    "multiple payment gateways and integrations.",
     long_description=read("README.rst"),
     author="Agiliq Solutions",
     author_email="hello@agiliq.com",
     license="BSD",
     url="http://github.com/agiliq/merchant",
     packages=find_packages(exclude=['example*']),
-    package_data=find_package_data("billing", only_in_packages=False),
+    package_data=find_package_data("flask_merchant", only_in_packages=False),
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: BSD License",
+         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Framework :: Django",
     ],
     zip_safe=False,
-    tests_require=["Django"],
+    py_modules=['flask_merchant'],
+    install_requires=['flask', 'merchant']
 )

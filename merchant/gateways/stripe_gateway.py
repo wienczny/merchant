@@ -13,6 +13,10 @@ class StripeGateway(Gateway):
     homepage_url = "https://stripe.com/"
     display_name = "Stripe"
 
+    def __init__(self, settings):
+        stripe.api_key = settings['API_KEY']
+        self.stripe = stripe
+
     def purchase(self, amount, credit_card, options=None):
         card = credit_card
         if isinstance(credit_card, CreditCard):

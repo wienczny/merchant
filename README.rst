@@ -1,34 +1,58 @@
-Making merchant, the library that talks to multiple payment gateways and
-processors framework agnostic.
-
-Highly alpha and lots of components still require work. Hopefully, this
-will go upstream when the work is complete.
-
-Initial plans to support:
-
-* django
-* flask
-
-
 ----------------
-Support Matrix
+Django-Merchant
 ----------------
 
-+--------------------------+----------+----------+
-|                          |  Django  |  Flask   |
-+--------------------------+----------+----------+
-| Stripe                   |    Y     |    Y     |
-+--------------------------+----------+----------+
+|TravisCI|_
 
-Other framework support may be community contributed.
+.. |TravisCI| image:: https://api.travis-ci.org/agiliq/merchant.png?branch=master
+.. _TravisCI: https://travis-ci.org/agiliq/merchant
 
-Things to do
+Django-Merchant is a django application that enables you to use
+multiple payment processors from a single API.
+
+Gateways
+---------
+
+Following gateways are supported:
+
+* Authorize.net
+* Paypal
+* Eway
+* Braintree Payments (Server to Server)
+* Stripe
+* Paylane
+* WePay
+* Beanstream
+* Chargebee
+
+Off-Site Processing
+--------------------
+
+* Paypal
+* RBS WorldPay
+* Google Checkout
+* Amazon FPS
+* Braintree Payments (Transparent Redirect)
+* Stripe.js
+* eWAY
+* Authorize.net Direct Post Method
+
+Other
+-----
+
+* Bitcoin
+
+Documentation
 --------------
 
-* Make the merchant (base) library framework agnostic ie it will not contain
-  any forms, urlpatterns etc and will act as a base for the frameworks
-* Write separate documentation for each framework
-* Improve the examples for each framework
-* Upload each of the packages to pypi
-* Add more items when I recollect them...
+Documentation is automatically built and published online at:
 
+http://readthedocs.org/docs/django-merchant/en/latest/
+
+Support
+--------
+
+There is a mailing list where discussion regarding the development
+and usage of merchant happens:
+
+http://groups.google.com/group/django-merchant/

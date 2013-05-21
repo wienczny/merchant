@@ -1,10 +1,12 @@
-from flask.ext.merchant import Gateway, GatewayNotConfigured
-from merchant.utils.credit_card import InvalidCard, Visa, MasterCard, \
-     AmericanExpress, Discover, CreditCard
 import stripe
+
+from merchant import Gateway, GatewayNotConfigured
+from merchant.utils.credit_card import (InvalidCard, Visa, MasterCard,
+                                        AmericanExpress, Discover, CreditCard)
 
 
 class StripeGateway(Gateway):
+
     supported_cardtypes = [Visa, MasterCard, AmericanExpress, Discover]
     supported_countries = ['US']
     default_currency = "USD"
@@ -21,7 +23,7 @@ class StripeGateway(Gateway):
                 'exp_month': credit_card.month,
                 'exp_year': credit_card.year,
                 'cvc': credit_card.verification_value
-                }
+            }
         try:
             response = self.stripe.Charge.create(
                 amount=int(amount * 100),
@@ -41,7 +43,7 @@ class StripeGateway(Gateway):
                 'exp_month': credit_card.month,
                 'exp_year': credit_card.year,
                 'cvc': credit_card.verification_value
-                }
+            }
         try:
             customer = self.stripe.Customer.create(card=card)
         except (self.stripe.CardError, self.stripe.InvalidRequestError), error:
@@ -58,7 +60,7 @@ class StripeGateway(Gateway):
                 'exp_month': credit_card.month,
                 'exp_year': credit_card.year,
                 'cvc': credit_card.verification_value
-                }
+            }
         try:
             plan_id = options['plan_id']
             self.stripe.Plan.retrieve(options['plan_id'])
@@ -101,7 +103,7 @@ class StripeGateway(Gateway):
                 'exp_month': credit_card.month,
                 'exp_year': credit_card.year,
                 'cvc': credit_card.verification_value
-                }
+            }
         try:
             token = self.stripe.Token.create(
                 card=card,

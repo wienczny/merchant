@@ -110,7 +110,7 @@ def get_gateway(gateway, *args, **kwargs):
         # Let's actually load it (it's not in the cache)
         gateway_filename = "%s_gateway" % gateway
         gateway_module = None
-        lookup_path = ['billing']
+        lookup_path = ['merchant']
         lookup_path.extend(sys.path)
         for pkg in lookup_path:
             try:

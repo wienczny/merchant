@@ -2,7 +2,7 @@
 language: python
 python: 
 - "2.7"
-script: python example/manage.py test billing --settings=settings.travis
+script: py.test tests
 install: pip install -r example/requirements.txt
 env: 
   global: 
@@ -186,3 +186,4 @@ env:
       QXdzKxm+JwHjv97ABvo98kDUbEU8MyPtUg2MKjWhoLniTZos1zNVnRgUT2gB
       o7ux7zAl2Aw4iraGFtYl27OI6AXHy9P4NhwX5W7+iNCKLK3K1RkTh6Kby4xY
       CnXxd0uCv2KmHZ2OehK1UzKJyXIZwphfeTAZKoLVrSQBxyZ+HV4=
+  - MERCHANT_SETTINGS='test.conf.travis'

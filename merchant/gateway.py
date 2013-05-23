@@ -1,10 +1,12 @@
-import os
 import sys
 
 from importlib import import_module
+
+from .conf import settings
 from .utils.credit_card import CardNotSupported
 
 gateway_cache = {}
+
 
 class GatewayModuleNotFound(Exception):
     pass
@@ -94,12 +96,6 @@ class Gateway(object):
         """Delete the previously stored credit card and user
         profile information on the gateway"""
         raise NotImplementedError
-
-
-settings_module = os.getenv("MERCHANT_SETTINGS", None)
-settings = None
-if settings_module:
-    settings = getattr(import_module(settings_module), "MERCHANT_SETTINGS", {})
 
 
 def get_gateway(gateway, *args, **kwargs):

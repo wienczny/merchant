@@ -1,36 +1,32 @@
-from billing import Gateway, GatewayNotConfigured
-from billing.gateway import InvalidData
-from billing.signals import *
-from billing.utils.credit_card import InvalidCard, Visa, MasterCard, \
-    AmericanExpress, Discover, CreditCard
-from django.conf import settings
+import os
 import braintree
+
+from merchant import Gateway, GatewayNotConfigured
+from merchant.gateway import InvalidData
+from merchant.utils.credit_card import InvalidCard, Visa, MasterCard, \
+    AmericanExpress, Discover, CreditCard
 
 
 class BraintreePaymentsGateway(Gateway):
+
     supported_cardtypes = [Visa, MasterCard, AmericanExpress, Discover]
     supported_countries = ["US"]
     default_currency = "USD"
     homepage_url = "http://www.braintreepayments.com/"
     display_name = "Braintree Payments"
 
-    def __init__(self):
-        test_mode = getattr(settings, "MERCHANT_TEST_MODE", True)
+    def __init__(self, settings):
+        test_mode = os.getenv("MERCHANT_TEST_MODE", True)
         if test_mode:
             env = braintree.Environment.Sandbox
         else:
             env = braintree.Environment.Production
-        merchant_settings = getattr(settings, "MERCHANT_SETTINGS")
-        if not merchant_settings or not merchant_settings.get("braintree_payments"):
-            raise GatewayNotConfigured("The '%s' gateway is not correctly "
-                                       "configured." % self.display_name)
-        braintree_settings = merchant_settings['braintree_payments']
         braintree.Configuration.configure(
             env,
-            braintree_settings['MERCHANT_ACCOUNT_ID'],
-            braintree_settings['PUBLIC_KEY'],
-            braintree_settings['PRIVATE_KEY']
-            )
+            settings['MERCHANT_ACCOUNT_ID'],
+            settings['PUBLIC_KEY'],
+            settings['PRIVATE_KEY']
+        )
 
     def _cc_expiration_date(self, credit_card):
         return "%s/%s" % (credit_card.month, credit_card.year)
@@ -143,14 +139,8 @@ class BraintreePaymentsGateway(Gateway):
         response = braintree.Transaction.sale(request_hash)
         if response.is_success:
             status = "SUCCESS"
-            transaction_was_successful.send(sender=self,
-                                            type="purchase",
-                                            response=response)
         else:
             status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="purchase",
-                                              response=response)
         return {"status": status, "response": response}
 
     def authorize(self, money, credit_card, options=None):
@@ -175,64 +165,37 @@ class BraintreePaymentsGateway(Gateway):
         response = braintree.Transaction.sale(request_hash)
         if response.is_success:
             status = "SUCCESS"
-            transaction_was_successful.send(sender=self,
-                                            type="authorize",
-                                            response=response)
         else:
             status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="authorize",
-                                              response=response)
         return {"status": status, "response": response}
 
     def capture(self, money, authorization, options=None):
         response = braintree.Transaction.submit_for_settlement(authorization, money)
         if response.is_success:
             status = "SUCCESS"
-            transaction_was_successful.send(sender=self,
-                                            type="capture",
-                                            response=response)
         else:
             status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="capture",
-                                              response=response)
         return {"status": status, "response": response}
 
     def void(self, identification, options=None):
         response = braintree.Transaction.void(identification)
         if response.is_success:
             status = "SUCCESS"
-            transaction_was_successful.send(sender=self,
-                                            type="void",
-                                            response=response)
         else:
             status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="void",
-                                              response=response)
         return {"status": status, "response": response}
 
     def credit(self, money, identification, options=None):
         response = braintree.Transaction.refund(identification, money)
         if response.is_success:
             status = "SUCCESS"
-            transaction_was_successful.send(sender=self,
-                                            type="credit",
-                                            response=response)
         else:
             status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="credit",
-                                              response=response)
         return {"status": status, "response": response}
 
     def recurring(self, money, credit_card, options=None):
         resp = self.store(credit_card, options=options)
         if resp["status"] == "FAILURE":
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="recurring",
-                                              response=resp)
             return resp
         payment_token = resp["response"].customer.credit_cards[0].token
         request_hash = options["recurring"]
@@ -242,14 +205,8 @@ class BraintreePaymentsGateway(Gateway):
         response = braintree.Subscription.create(request_hash)
         if response.is_success:
             status = "SUCCESS"
-            transaction_was_successful.send(sender=self,
-                                            type="recurring",
-                                            response=response)
         else:
             status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="recurring",
-                                              response=response)
         return {"status": status, "response": response}
 
     def store(self, credit_card, options=None):
@@ -300,9 +257,6 @@ class BraintreePaymentsGateway(Gateway):
                 }
             result = braintree.Customer.create(request_hash)
             if not result.is_success:
-                transaction_was_unsuccessful.send(sender=self,
-                                                  type="store",
-                                                  response=result)
                 return {"status": "FAILURE", "response": result}
             customer = result.customer
 
@@ -344,28 +298,16 @@ class BraintreePaymentsGateway(Gateway):
                 })
         if response.is_success:
             status = "SUCCESS"
-            transaction_was_successful.send(sender=self,
-                                            type="store",
-                                            response=response)
         else:
             for ii in response.errors.deep_errors:
                 print ii.message
             status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="store",
-                                              response=response)
         return {"status": status, "response": response}
 
     def unstore(self, identification, options=None):
         response = braintree.CreditCard.delete(identification)
         if response.is_success:
             status = "SUCCESS"
-            transaction_was_successful.send(sender=self,
-                                            type="unstore",
-                                            response=response)
         else:
             status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="unstore",
-                                              response=response)
         return {"status": status, "response": response}

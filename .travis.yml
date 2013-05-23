@@ -6,7 +6,7 @@ script: py.test tests
 install: pip install -r requirements.txt
 env:
   global:
-  - MERCHANT_SETTINGS=test.conf.travis
+  - MERCHANT_SETTINGS=tests.conf.travis
   - secure: ! 'gotLgSkiJTI3fvEdQAR/XlvMMDKYiPyb93vo7gFHFYlAgx+3NEJchQoMyLrj
 
       ZUPuIwhbBFFA5kB7afUkODmEzhJsbZMXvsmlzcsLQMC7RPBGrLS+9ccianiQ

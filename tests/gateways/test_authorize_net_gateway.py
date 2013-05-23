@@ -14,6 +14,13 @@ class TestAuthorizeNetAIMGateway(unittest.TestCase):
 
     def setUp(self):
         self.merchant = get_gateway("authorize_net")
+        self.credit_card = CreditCard(
+            first_name="Test",
+            last_name="User",
+            month=10, year=2020,
+            number="4222222222222",
+            verification_value="100"
+        )
 
     def test_card_supported(self):
         self.credit_card.number = "5019222222222222"

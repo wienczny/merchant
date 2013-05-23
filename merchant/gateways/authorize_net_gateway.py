@@ -4,15 +4,13 @@ import datetime
 
 from collections import namedtuple
 
-from django.conf import settings
 from django.template.loader import render_to_string
 
-from billing.models import AuthorizeAIMResponse
-from billing import Gateway, GatewayNotConfigured
-from billing.signals import *
-from billing.utils.credit_card import InvalidCard, Visa, \
-    MasterCard, Discover, AmericanExpress
-from billing.utils.xml_parser import parseString, nodeToDic
+from merchant import Gateway, GatewayNotConfigured
+from merchant.utils.credit_card import (
+    InvalidCard, Visa, MasterCard, Discover, AmericanExpress
+)
+from merchant.utils.xml_parser import parseString, nodeToDic
 
 API_VERSION = '3.1'
 DELIM_CHAR = ','
@@ -20,11 +18,53 @@ ENCAP_CHAR = '$'
 APPROVED, DECLINED, ERROR, FRAUD_REVIEW = 1, 2, 3, 4
 RESPONSE_CODE, RESPONSE_REASON_CODE, RESPONSE_REASON_TEXT = 0, 2, 3
 
+
 MockAuthorizeAIMResponse = namedtuple(
     'AuthorizeAIMResponse', [
         'response_code',
         'response_reason_code',
         'response_reason_text'
+    ]
+)
+
+
+AuthorizeAIMResponse = namedtuple(
+    'AuthorizeAIMResponse', [
+        'response_code',
+        'response_reason_code',
+        'response_reason_text',
+        'authorization_code',
+        'address_verification_response',
+        'transaction_id',
+        'invoice_number',
+        'description',
+        'amount',
+        'method',
+        'transaction_type',
+        'customer_id',
+
+        'first_name',
+        'last_name',
+        'company',
+        'address',
+        'city',
+        'state',
+        'zip_code',
+        'country',
+        'phone',
+        'fax',
+        'email',
+
+        'shipping_first_name',
+        'shipping_last_name',
+        'shipping_company',
+        'shipping_address',
+        'shipping_city',
+        'shipping_state',
+        'shipping_zip_code',
+        'shipping_country',
+
+        'card_code_response',
     ]
 )
 
@@ -65,7 +105,7 @@ def save_authorize_response(response):
     data['shipping_zip_code'] = response[30]
     data['shipping_country'] = response[31]
     data['card_code_response'] = response[38]
-    return AuthorizeAIMResponse.objects.create(**data)
+    return AuthorizeAIMResponse(**data)
 
 
 class AuthorizeNetGateway(Gateway):
@@ -82,14 +122,9 @@ class AuthorizeNetGateway(Gateway):
     homepage_url = "http://www.authorize.net/"
     display_name = "Authorize.Net"
 
-    def __init__(self):
-        merchant_settings = getattr(settings, "MERCHANT_SETTINGS")
-        if not merchant_settings or not merchant_settings.get("authorize_net"):
-            raise GatewayNotConfigured("The '%s' gateway is not correctly "
-                                       "configured." % self.display_name)
-        authorize_net_settings = merchant_settings["authorize_net"]
-        self.login = authorize_net_settings["LOGIN_ID"]
-        self.password = authorize_net_settings["TRANSACTION_KEY"]
+    def __init__(self, settings):
+        self.login = settings["LOGIN_ID"]
+        self.password = settings["TRANSACTION_KEY"]
 
     def add_invoice(self, post, options):
         """add invoice details to the request parameters"""
@@ -208,15 +243,6 @@ class AuthorizeNetGateway(Gateway):
 
         response = self.commit("AUTH_CAPTURE", money, post)
         status = "SUCCESS"
-        if response.response_code != 1:
-            status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="purchase",
-                                              response=response)
-        else:
-            transaction_was_successful.send(sender=self,
-                                            type="purchase",
-                                            response=response)
         return {"status": status, "response": response}
 
     def authorize(self, money, credit_card, options=None):
@@ -235,15 +261,6 @@ class AuthorizeNetGateway(Gateway):
 
         response = self.commit("AUTH_ONLY", money, post)
         status = "SUCCESS"
-        if response.response_code != 1:
-            status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="authorization",
-                                              response=response)
-        else:
-            transaction_was_successful.send(sender=self,
-                                            type="authorization",
-                                            response=response)
         return {"status": status, "response": response}
 
     def capture(self, money, authorization, options=None):
@@ -257,15 +274,6 @@ class AuthorizeNetGateway(Gateway):
 
         response = self.commit("PRIOR_AUTH_CAPTURE", money, post)
         status = "SUCCESS"
-        if response.response_code != 1:
-            status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="capture",
-                                              response=response)
-        else:
-            transaction_was_successful.send(sender=self,
-                                            type="capture",
-                                            response=response)
         return {"status": status, "response": response}
 
     def void(self, identification, options=None):
@@ -280,15 +288,6 @@ class AuthorizeNetGateway(Gateway):
         # commit ignores the money argument for void, so we set it None
         response = self.commit("VOID", None, post)
         status = "SUCCESS"
-        if response.response_code != 1:
-            status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="void",
-                                              response=response)
-        else:
-            transaction_was_successful.send(sender=self,
-                                            type="void",
-                                            response=response)
         return {"status": status, "response": response}
 
     def credit(self, money, identification, options=None):
@@ -304,15 +303,6 @@ class AuthorizeNetGateway(Gateway):
 
         response = self.commit("CREDIT", money, post)
         status = "SUCCESS"
-        if response.response_code != 1:
-            status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="credit",
-                                              response=response)
-        else:
-            transaction_was_successful.send(sender=self,
-                                            type="credit",
-                                            response=response)
         return {"status": status, "response": response}
 
     def recurring(self, money, credit_card, options):
@@ -360,13 +350,6 @@ class AuthorizeNetGateway(Gateway):
         status = "SUCCESS"
         if response['messages']['resultCode'].lower() != 'ok':
             status = "FAILURE"
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="recurring",
-                                              response=response)
-        else:
-            transaction_was_successful.send(sender=self,
-                                            type="recurring",
-                                            response=response)
         return {"status": status, "response": response}
 
     def store(self, creditcard, options=None):

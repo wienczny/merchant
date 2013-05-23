@@ -6,10 +6,7 @@ tmp
 *.db
 *.*~
 #*#
-example/tmp
-example/localsettings.py
-example/settings/local.py
-django-merchant/example/settings/local.py
+tests/conf/local.py
 
 docs/_build/*
 

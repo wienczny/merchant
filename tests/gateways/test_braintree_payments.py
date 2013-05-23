@@ -1,16 +1,17 @@
+import unittest
 import braintree
 
-from django.test import TestCase
+from merchant import get_gateway, CreditCard
+from merchant.gateway import CardNotSupported, InvalidData
+from merchant.utils.credit_card import Visa
 
-from billing import get_gateway, CreditCard
-from billing.signals import *
-from billing.gateway import CardNotSupported, InvalidData
-from billing.utils.credit_card import Visa
+from tests.conf import settings
 
 
-class BraintreePaymentsGatewayTestCase(TestCase):
+class TestBraintreePaymentsGateway(unittest.TestCase):
+
     def setUp(self):
-        self.merchant = get_gateway("braintree_payments")
+        self.merchant = get_gateway("braintree_payments", settings=settings.MERCHANT_SETTINGS["braintree_payments"])
         self.merchant.test_mode = True
         self.credit_card = CreditCard(first_name="Test", last_name="User",
                                       month=10, year=2020,
@@ -48,28 +49,6 @@ class BraintreePaymentsGatewayTestCase(TestCase):
         resp = self.merchant.purchase(2900, self.credit_card)
         self.assertBraintreeResponseFailure(resp)
 
-    def testPaymentSuccessfulSignal(self):
-        received_signals = []
-
-        def receive(sender, **kwargs):
-            received_signals.append(kwargs.get("signal"))
-
-        transaction_was_successful.connect(receive)
-
-        resp = self.merchant.purchase(1, self.credit_card)
-        self.assertEquals(received_signals, [transaction_was_successful])
-
-    def testPaymentUnSuccessfulSignal(self):
-        received_signals = []
-
-        def receive(sender, **kwargs):
-            received_signals.append(kwargs.get("signal"))
-
-        transaction_was_unsuccessful.connect(receive)
-
-        resp = self.merchant.purchase(2000, self.credit_card)
-        self.assertEquals(received_signals, [transaction_was_unsuccessful])
-
     def testCreditCardExpired(self):
         credit_card = CreditCard(first_name="Test", last_name="User",
                                  month=10, year=2011,
@@ -83,14 +62,6 @@ class BraintreePaymentsGatewayTestCase(TestCase):
         self.assertBraintreeResponseSuccess(resp)
         resp = self.merchant.capture(50, resp["response"].transaction.id)
         self.assertBraintreeResponseSuccess(resp)
-
-    # Need a way to test this. Requires delaying the status to either
-    # "settled" or "settling"
-    # def testAuthorizeAndRefund(self):
-    #     resp = self.merchant.purchase(100, self.credit_card)
-    #     self.assertEquals(resp["status"], "SUCCESS")
-    #     response = self.merchant.credit(50, resp["response"].transaction.id)
-    #     self.assertEquals(response["status"], "SUCCESS")
 
     def testAuthorizeAndVoid(self):
         resp = self.merchant.authorize(105, self.credit_card)

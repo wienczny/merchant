@@ -5,13 +5,11 @@ from merchant import get_gateway, CreditCard
 from merchant.gateway import CardNotSupported, InvalidData
 from merchant.utils.credit_card import Visa
 
-from tests.conf import settings
-
 
 class TestBraintreePaymentsGateway(unittest.TestCase):
 
     def setUp(self):
-        self.merchant = get_gateway("braintree_payments", settings=settings.MERCHANT_SETTINGS["braintree_payments"])
+        self.merchant = get_gateway("braintree_payments")
         self.merchant.test_mode = True
         self.credit_card = CreditCard(first_name="Test", last_name="User",
                                       month=10, year=2020,

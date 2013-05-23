@@ -9,18 +9,11 @@ from merchant.gateways.authorize_net_gateway import (
 )
 from merchant.utils.credit_card import Visa
 
-from tests.conf import settings
-
 
 class TestAuthorizeNetAIMGateway(unittest.TestCase):
 
     def setUp(self):
-        self.merchant = get_gateway("authorize_net", settings=settings.MERCHANT_SETTINGS['authorize_net'])
-        self.merchant.test_mode = True
-        self.credit_card = CreditCard(first_name="Test", last_name="User",
-                                      month=10, year=2020,
-                                      number="4222222222222",
-                                      verification_value="100")
+        self.merchant = get_gateway("authorize_net")
 
     def test_card_supported(self):
         self.credit_card.number = "5019222222222222"

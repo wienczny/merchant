@@ -1,6 +1,8 @@
+import os
+import sys
+
 from importlib import import_module
 from .utils.credit_card import CardNotSupported
-import sys
 
 gateway_cache = {}
 
@@ -93,6 +95,13 @@ class Gateway(object):
         profile information on the gateway"""
         raise NotImplementedError
 
+
+settings_module = os.getenv("MERCHANT_SETTINGS", None)
+settings = None
+if settings_module:
+    settings = getattr(import_module(settings_module), "MERCHANT_SETTINGS", {})
+
+
 def get_gateway(gateway, *args, **kwargs):
     """
     Return a gateway instance specified by `gateway` name.
@@ -127,4 +136,5 @@ def get_gateway(gateway, *args, **kwargs):
         gateway_cache[gateway] = clazz
     # We either hit the cache or load our class object, let's return an instance
     # of it.
+    kwargs.setdefault("settings", settings[gateway])
     return clazz(*args, **kwargs)

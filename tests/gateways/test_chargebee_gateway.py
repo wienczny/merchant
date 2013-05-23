@@ -1,10 +1,10 @@
-from django.test import TestCase
-from billing import get_gateway, CreditCard
-from billing.signals import transaction_was_successful, \
-    transaction_was_unsuccessful
+import unittest
+
+from merchant import get_gateway, CreditCard
 
 
-class ChargebeeGatewayTestCase(TestCase):
+class TestChargebeeGateway(unittest.TestCase):
+
     def setUp(self):
         self.merchant = get_gateway("chargebee")
         self.merchant.test_mode = True
@@ -38,28 +38,6 @@ class ChargebeeGatewayTestCase(TestCase):
         self.assertEquals(resp["status"], "SUCCESS")
         response = self.merchant.void(resp["response"]["subscription"]["id"])
         self.assertEquals(response["status"], "SUCCESS")
-
-    def testPaymentSuccessfulSignal(self):
-        received_signals = []
-
-        def receive(sender, **kwargs):
-            received_signals.append(kwargs.get("signal"))
-
-        transaction_was_successful.connect(receive)
-
-        resp = self.merchant.store(self.credit_card, options={"plan_id": "professional"})
-        self.assertEquals(received_signals, [transaction_was_successful])
-
-    def testPaymentUnSuccessfulSignal(self):
-        received_signals = []
-
-        def receive(sender, **kwargs):
-            received_signals.append(kwargs.get("signal"))
-
-        transaction_was_unsuccessful.connect(receive)
-
-        resp = self.merchant.store(self.credit_card)
-        self.assertEquals(received_signals, [transaction_was_unsuccessful])
 
     def testCreditCardExpired(self):
         credit_card = CreditCard(first_name="Test", last_name="User",

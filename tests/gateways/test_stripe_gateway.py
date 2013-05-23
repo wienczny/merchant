@@ -5,13 +5,13 @@ from merchant import get_gateway, CreditCard
 from merchant.gateway import CardNotSupported
 from merchant.utils.credit_card import Visa
 
-from ..conf import MERCHANT_SETTINGS
+from tests.conf import settings
 
 
 class TestStripeGateway(unittest.TestCase):
 
     def setUp(self):
-        self.merchant = get_gateway("stripe", settings=MERCHANT_SETTINGS['stripe'])
+        self.merchant = get_gateway("stripe", settings=settings.MERCHANT_SETTINGS['stripe'])
         self.credit_card = CreditCard(
             first_name="Test",
             last_name="User",

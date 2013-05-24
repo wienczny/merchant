@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
 # vim:tabstop=4:expandtab:sw=4:softtabstop=4
-from unittest import skipIf
+import unittest
 
-from django.test import TestCase
-from django.conf import settings
+from merchant.gateway import CardNotSupported
+from merchant.utils.credit_card import Visa, CreditCard
+from merchant import get_gateway
+from merchant.utils.paylane import *
 
-from billing.gateway import CardNotSupported
-from billing.utils.credit_card import Visa, CreditCard
-from billing import get_gateway
-from billing.signals import *
-from billing.utils.paylane import *
-from billing.models import PaylaneTransaction, PaylaneAuthorization
 
 #This is needed because Paylane doesn't like too many requests in a very short time
 THROTTLE_CONTROL_SECONDS = 60
@@ -28,8 +24,7 @@ THROTTLE_CONTROL_SECONDS = 60
 # 4556969412054203
 
 
-@skipIf(not settings.MERCHANT_SETTINGS.get("paylane", None), "gateway not configured")
-class PaylaneTestCase(TestCase):
+class TestPaylaneGateway(unittest.TestCase):
     def setUp(self):
         self.merchant = get_gateway("paylane")
         self.merchant.test_mode = True
@@ -40,10 +35,6 @@ class PaylaneTestCase(TestCase):
         address.country_code = 'PT'
         self.customer = PaylanePaymentCustomer(name='Celso Pinto', email='celso@modelo3.pt', ip_address='8.8.8.8', address=address)
         self.product = PaylanePaymentProduct(description='Paylane test payment')
-
-    def tearDown(self):
-        for authz in PaylaneAuthorization.objects.all():
-            self.merchant.void(authz.sale_authorization_id)
 
     def testOneShotPurchaseOK(self):
         credit_card = Visa(first_name='Celso', last_name='Pinto', month=10, year=2020, number='4012888888881881', verification_value=435)

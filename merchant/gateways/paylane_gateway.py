@@ -5,14 +5,40 @@ import datetime
 
 from suds.client import Client
 from suds.cache import ObjectCache
-from django.conf import settings
+from collections import namedtuple
 from django.utils.translation import ugettext_lazy as _
 
-from billing import Gateway, GatewayNotConfigured
-from billing.models import PaylaneTransaction, PaylaneAuthorization
-from billing.utils.credit_card import CreditCard, InvalidCard, Visa, MasterCard
-from billing.utils.paylane import PaylaneError
-from billing.signals import transaction_was_successful, transaction_was_unsuccessful
+from merchant import Gateway, GatewayNotConfigured
+from merchant.utils.credit_card import (CreditCard,
+                                        InvalidCard, Visa, MasterCard)
+from merchant.utils.paylane import PaylaneError
+
+
+class PaylaneTransaction(object):
+
+    transaction_date = None
+    amount = None
+    customer_name = None
+    customer_email = None
+    product = None
+    success = None
+    error_code = None
+    error_description = None
+    acquirer_error = None
+    acquirer_description = None
+
+    def __unicode__(self):
+        return u'Transaction for %s (%s)' % (self.customer_name, self.customer_email)
+
+
+class PaylaneAuthorization(object):
+
+    sale_authorization_id = None
+    first_authorization = None
+    transaction = None
+
+    def __unicode__(self):
+        return u'Authorization: %s' % (self.sale_authorization_id)
 
 
 class PaylaneGateway(Gateway):
@@ -25,18 +51,14 @@ class PaylaneGateway(Gateway):
     homepage_url = 'http://www.paylane.com/'
     display_name = 'Paylane'
 
-    def __init__(self):
-        merchant_settings = getattr(settings, "MERCHANT_SETTINGS")
-        if not merchant_settings or not merchant_settings.get("paylane"):
-            raise GatewayNotConfigured("The '%s' gateway is not correctly "
-                                       "configured." % self.display_name)
-        paylane_settings = merchant_settings["paylane"]
-        wsdl = paylane_settings.get('WSDL', 'https://direct.paylane.com/wsdl/production/Direct.wsdl')
-        wsdl_cache = paylane_settings.get('SUDS_CACHE_DIR', '/tmp/suds')
-        username = paylane_settings.get('USERNAME', '')
-        password = paylane_settings.get('PASSWORD', '')
+    def __init__(self, settings):
+        wsdl = settings.get('WSDL', 'https://direct.paylane.com/wsdl/production/Direct.wsdl')
+        wsdl_cache = settings.get('SUDS_CACHE_DIR', '/tmp/suds')
+        username = settings.get('USERNAME', '')
+        password = settings.get('PASSWORD', '')
 
-        self.client = Client(wsdl, username=username, password=password, cache=ObjectCache(location=wsdl_cache, days=15))
+        self.client = Client(wsdl, username=username, password=password,
+                             cache=ObjectCache(location=wsdl_cache, days=15))
 
     def _validate(self, card):
         if not isinstance(card, CreditCard):
@@ -90,7 +112,6 @@ class PaylaneGateway(Gateway):
         status = None
         response = None
         transaction.success = hasattr(res, 'OK')
-        transaction.save()
 
         if hasattr(res, 'OK'):
             status = 'SUCCESS'
@@ -98,10 +119,8 @@ class PaylaneGateway(Gateway):
             authz.sale_authorization_id = res.OK.id_sale_authorization
             authz.transaction = transaction
             authz.first_authorization = True
-            authz.save()
 
             response = {'transaction': transaction, 'authorization': authz}
-            transaction_was_successful.send(sender=self, type='recurring', response=response)
 
         else:
             status = 'FAILURE'
@@ -111,7 +130,6 @@ class PaylaneGateway(Gateway):
                                     getattr(res.ERROR, 'processor_error_description', '')),
                         'transaction': transaction
                         }
-            transaction_was_unsuccessful.send(sender=self, type='recurring', response=response)
 
         return {'status': status, 'response': response}
 
@@ -133,15 +151,12 @@ class PaylaneGateway(Gateway):
         status = None
         response = None
         transaction.success = hasattr(res, 'OK')
-        transaction.save()
         if hasattr(res, 'OK'):
             status = 'SUCCESS'
             authz = PaylaneAuthorization()
             authz.sale_authorization_id = authorization.sale_authorization_id
             authz.transaction = transaction
-            authz.save()
             response = {'transaction': transaction, 'authorization': authz}
-            transaction_was_successful.send(sender=self, type='bill_recurring', response=response)
         else:
             status = 'FAILURE'
             response = {'error': PaylaneError(getattr(res.ERROR, 'error_number'),
@@ -150,7 +165,6 @@ class PaylaneGateway(Gateway):
                                     getattr(res.ERROR, 'processor_error_description', '')),
                         'transaction': transaction
                         }
-            transaction_was_unsuccessful.send(sender=self, type='bill_recurring', response=response)
 
         return {'status': status, 'response': response}
 
@@ -197,12 +211,10 @@ class PaylaneGateway(Gateway):
         status = None
         response = None
         transaction.success = hasattr(res, 'OK')
-        transaction.save()
 
         if hasattr(res, 'OK'):
             status = 'SUCCESS'
             response = {'transaction': transaction}
-            transaction_was_successful.send(sender=self, type='purchase', response=response)
         else:
             status = 'FAILURE'
             response = {'error': PaylaneError(getattr(res.ERROR, 'error_number'),
@@ -211,7 +223,6 @@ class PaylaneGateway(Gateway):
                                     getattr(res.ERROR, 'processor_error_description', '')),
                         'transaction': transaction
                         }
-            transaction_was_unsuccessful.send(sender=self, type='purchase', response=response)
 
         return {'status': status, 'response': response}
 
@@ -255,15 +266,12 @@ class PaylaneGateway(Gateway):
         status = None
         response = None
         transaction.success = hasattr(res, 'OK')
-        transaction.save()
         if hasattr(res, 'OK'):
             status = 'SUCCESS'
             authz = PaylaneAuthorization()
             authz.sale_authorization_id = authorization.sale_authorization_id
             authz.transaction = transaction
-            authz.save()
             response = {'transaction': transaction, 'authorization': authz}
-            transaction_was_successful.send(sender=self, type='bill_recurring', response=response)
         else:
             status = 'FAILURE'
             response = {'error': PaylaneError(getattr(res.ERROR, 'error_number'),
@@ -272,6 +280,5 @@ class PaylaneGateway(Gateway):
                                     getattr(res.ERROR, 'processor_error_description', '')),
                         'transaction': transaction
                         }
-            transaction_was_unsuccessful.send(sender=self, type='bill_recurring', response=response)
 
         return {'status': status, 'response': response}

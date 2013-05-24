@@ -1,14 +1,15 @@
+import unittest
+
 from datetime import date
-from django.test import TestCase
-from billing import get_gateway, CreditCard
-from billing.signals import *
-from billing.models import AuthorizeAIMResponse
-from billing.gateway import CardNotSupported
-from billing.utils.credit_card import Visa
+
+from merchant import get_gateway, CreditCard
+from merchant.gateway import CardNotSupported
+from merchant.utils.credit_card import Visa
 
 from beanstream.billing import Address
 
-class BeanstreamGatewayTestCase(TestCase):
+
+class TestBeanstreamGateway(unittest.TestCase):
     approved_cards = {'visa': {'number':      '4030000010001234', 'cvd': '123'},
                        '100_visa': {'number': '4504481742333', 'cvd': '123'},
                        'vbv_visa': {'nubmer': '4123450131003312', 'cvd': '123', 'vbv': '12345'},
@@ -101,40 +102,6 @@ class BeanstreamGatewayTestCase(TestCase):
         self.assertEquals(response["status"], "FAILURE")
         self.assertEquals(response["response"].approved(), False)
         self.assertEquals(response["response"].resp["messageId"], ["7"])
-
-    def testPaymentSuccessfulSignal(self):
-        credit_card = self.ccFactory(self.approved_cards["visa"]["number"],
-                                     self.approved_cards["visa"]["cvd"])
-
-        received_signals = []
-
-        def receive(sender, **kwargs):
-            received_signals.append(kwargs.get("signal"))
-
-        transaction_was_successful.connect(receive)
-
-        resp = self.merchant.purchase(10, credit_card, {"billing_address": {
-                    "name": "Test user",
-                    "email": "test@example.com",
-                    "phone": "123456789",
-                    "city": "Hyd",
-                    "state": "AP",
-                    "country": "IN",
-                    "address1": "ABCD"}})
-        self.assertEquals(received_signals, [transaction_was_successful])
-
-    def testPaymentUnSuccessfulSignal(self):
-        credit_card = self.ccFactory(self.approved_cards["visa"]["number"],
-                                     self.approved_cards["visa"]["cvd"])
-        received_signals = []
-
-        def receive(sender, **kwargs):
-            received_signals.append(kwargs.get("signal"))
-
-        transaction_was_unsuccessful.connect(receive)
-
-        resp = self.merchant.purchase(10, credit_card)
-        self.assertEquals(received_signals, [transaction_was_unsuccessful])
 
     def testPurchaseVoid(self):
         credit_card = self.ccFactory(self.approved_cards["visa"]["number"],

@@ -1,16 +1,14 @@
 from beanstream.gateway import Beanstream
 from beanstream.billing import CreditCard
 
-from django.conf import settings
-
-from billing import Gateway, GatewayNotConfigured
-from billing.gateway import CardNotSupported
-from billing.signals import transaction_was_successful, \
-    transaction_was_unsuccessful
-from billing.utils.credit_card import InvalidCard, Visa, \
+from merchant import Gateway, GatewayNotConfigured
+from merchant.gateway import CardNotSupported
+from merchant.utils.credit_card import InvalidCard, Visa, \
     MasterCard, Discover, AmericanExpress
 
+
 class BeanstreamGateway(Gateway):
+
     txnurl = "https://www.beanstream.com/scripts/process_transaction.asp"
     profileurl = "https://www.beanstream.com/scripts/payment_profile.asp"
     display_name = "Beanstream"
@@ -26,7 +24,7 @@ class BeanstreamGateway(Gateway):
         ("approvedPage", False), # URL (encoded). Unlimited a/n characters. Beanstream provides default approved or declined transaction pages. For a seamless transaction flow, design unique pages and specify the approved transaction redirection URL here.
         ("declinedPage", False), # URL (encoded). Unlimited a/n characters. Specify the URL for your custom declined transaction notification page here.
 
-        ("trnCardOwner", True), #* Max 64 a/n characters This field must contain the full name of the card holder exactly as it appears on their credit card. 
+        ("trnCardOwner", True), #* Max 64 a/n characters This field must contain the full name of the card holder exactly as it appears on their credit card.
         ("trnCardNumber", True), # Max 20 digits Capture the customer's credit card number.
         ("trnExpMonth", True), # 2 digits (January = 01) The card expiry month with January as 01 and December as 12.
         ("trnExpYear", True), # 2 digits (2011=11) Card expiry years must be entered as a number less than 50. In combination, trnExpYear and trnExpMonth must reflect a date in the future.
@@ -50,41 +48,31 @@ class BeanstreamGateway(Gateway):
         ("SecireCAVV", True), # 40 a/n characters Include the cardholder authentication verification value as issued by the bank.
     ]
 
-    def __init__(self, *args, **kwargs):
-        merchant_settings = getattr(settings, "MERCHANT_SETTINGS")
-        if not merchant_settings or not merchant_settings.get("beanstream"):
-            raise GatewayNotConfigured("The '%s' gateway is not correctly "
-                                       "configured." % self.display_name)
-        beanstream_settings = merchant_settings["beanstream"]
-
+    def __init__(self, settings):
         self.supported_cardtypes = [Visa, MasterCard, AmericanExpress, Discover]
-
-        hash_validation = False
-        if kwargs.get("hash_algorithm", beanstream_settings.get("HASH_ALGORITHM", None)):
-            hash_validation = True
-
+        hash_validation = bool(settings.get("HASH_ALGORITHM", None))
         self.beangw = Beanstream(
             hash_validation=hash_validation,
-            require_billing_address=kwargs.get("require_billing_address", False),
-            require_cvd=kwargs.get("require_cvd", False))
+            require_billing_address=settings.get("REQUIRE_BILLING_ADDRESS", False),
+            require_cvd=settings.get("REQUIRE_CVD", False)
+        )
+        merchant_id = settings["MERCHANT_ID"]
+        login_company = settings["LOGIN_COMPANY"]
+        login_user = settings["LOGIN_USER"]
+        login_password = settings["LOGIN_PASSWORD"]
 
-        merchant_id = kwargs.pop("merchant_id", beanstream_settings["MERCHANT_ID"])
-        login_company = kwargs.pop("login_company", beanstream_settings["LOGIN_COMPANY"])
-        login_user = kwargs.pop("login_user", beanstream_settings["LOGIN_USER"])
-        login_password = kwargs.pop("login_password", beanstream_settings["LOGIN_PASSWORD"])
-
+        kwargs = getattr(settings, 'KWARGS', {})
         if hash_validation:
-            if not kwargs.get("hash_algorithm"):
-                kwargs["hash_algorithm"] = beanstream_settings["HASH_ALGORITHM"]
-            if not kwargs.get("hashcode"):
-                kwargs["hashcode"] = beanstream_settings["HASHCODE"]
+            kwargs["hash_algorithm"] = settings["HASH_ALGORITHM"]
+            kwargs["hashcode"] = settings["HASHCODE"]
 
         self.beangw.configure(
             merchant_id,
             login_company,
             login_user,
             login_password,
-            **kwargs)
+            **kwargs
+        )
 
     def convert_cc(self, credit_card, validate=True):
         """Convert merchant.billing.utils.CreditCard to beanstream.billing.CreditCard"""
@@ -131,20 +119,12 @@ class BeanstreamGateway(Gateway):
 
         txn.validate()
         resp = self._parse_resp(txn.commit())
-        if resp["status"] == "SUCCESS":
-            transaction_was_successful.send(sender=self,
-                                            type="purchase",
-                                            response=resp["response"])
-        else:
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="purchase",
-                                              response=resp["response"])
         return resp
 
     def authorize(self, money, credit_card, options=None):
         """Authorization for a future capture transaction"""
-        # TODO: Need to add check for trnAmount 
-        # For Beanstream Canada and TD Visa & MasterCard merchant accounts this value may be $0 or $1 or more. 
+        # TODO: Need to add check for trnAmount
+        # For Beanstream Canada and TD Visa & MasterCard merchant accounts this value may be $0 or $1 or more.
         # For all other scenarios, this value must be $0.50 or greater.
         options = options or {}
         order_number = options.get("order_number") if options else None
@@ -165,14 +145,6 @@ class BeanstreamGateway(Gateway):
 
         txn.validate()
         resp = self._parse_resp(txn.commit())
-        if resp["status"] == "SUCCESS":
-            transaction_was_successful.send(sender=self,
-                                            type="authorize",
-                                            response=resp["response"])
-        else:
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="authorize",
-                                              response=resp["response"])
         return resp
 
     def unauthorize(self, money, authorization, options=None):
@@ -180,14 +152,6 @@ class BeanstreamGateway(Gateway):
         txn = self.beangw.cancel_preauth(authorization)
 
         resp = self._parse_resp(txn.commit())
-        if resp["status"] == "SUCCESS":
-            transaction_was_successful.send(sender=self,
-                                            type="unauthorize",
-                                            response=resp["response"])
-        else:
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="unauthorize",
-                                              response=resp["response"])
         return resp
 
     def capture(self, money, authorization, options=None):
@@ -195,14 +159,6 @@ class BeanstreamGateway(Gateway):
         order_number = options.get("order_number") if options else None
         txn = self.beangw.preauth_completion(authorization, money, order_number)
         resp = self._parse_resp(txn.commit())
-        if resp["status"] == "SUCCESS":
-            transaction_was_successful.send(sender=self,
-                                            type="capture",
-                                            response=resp["response"])
-        else:
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="capture",
-                                              response=resp["response"])
         return resp
 
     def void(self, identification, options=None):
@@ -210,14 +166,6 @@ class BeanstreamGateway(Gateway):
         """Right now this only handles VOID_PURCHASE"""
         txn = self.beangw.void_purchase(identification["txnid"], identification["amount"])
         resp = self._parse_resp(txn.commit())
-        if resp["status"] == "SUCCESS":
-            transaction_was_successful.send(sender=self,
-                                            type="void",
-                                            response=resp["response"])
-        else:
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="void",
-                                              response=resp["response"])
         return resp
 
     def credit(self, money, identification, options=None):
@@ -225,14 +173,6 @@ class BeanstreamGateway(Gateway):
         order_number = options.get("order_number") if options else None
         txn = self.beangw.return_purchase(identification, money, order_number)
         resp = self._parse_resp(txn.commit())
-        if resp["status"] == "SUCCESS":
-            transaction_was_successful.send(sender=self,
-                                            type="credit",
-                                            response=resp["response"])
-        else:
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="credit",
-                                              response=resp["response"])
         return resp
 
     def recurring(self, money, creditcard, options=None):
@@ -251,18 +191,10 @@ class BeanstreamGateway(Gateway):
         status = "FAILURE"
         response = None
         if resp.approved() or resp.resp["responseCode"] == ["17"]:
-            status = "SUCCESS" 
+            status = "SUCCESS"
         else:
             response = resp
 
-        if status == "SUCCESS":
-            transaction_was_successful.send(sender=self,
-                                            type="recurring",
-                                            response=response)
-        else:
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="recurring",
-                                              response=response)
         return {"status": status, "response": response}
 
     def unstore(self, identification, options=None):

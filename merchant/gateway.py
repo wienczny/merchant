@@ -118,10 +118,7 @@ def get_gateway(gateway, *args, **kwargs):
         lookup_path = ['merchant']
         lookup_path.extend(sys.path)
         for pkg in lookup_path:
-            try:
-                gateway_module = import_module(".gateways.%s" % gateway_filename, package=pkg)
-            except (ImportError, TypeError):
-                pass
+            gateway_module = import_module(".gateways.%s" % gateway_filename, package=pkg)
         if not gateway_module:
             raise GatewayModuleNotFound("Missing gateway: %s" % (gateway))
         gateway_class_name = "".join(gateway_filename.title().split("_"))

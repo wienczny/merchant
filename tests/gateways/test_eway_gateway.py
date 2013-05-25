@@ -1,9 +1,8 @@
-from django.test import TestCase
-from billing import get_gateway, CreditCard
-from billing.signals import *
-from billing.models import EwayResponse
-from billing.gateway import CardNotSupported
-from billing.utils.credit_card import Visa
+import unittest
+
+from merchant import get_gateway, CreditCard
+from merchant.gateway import CardNotSupported
+from merchant.utils.credit_card import Visa
 
 fake_options = {
     "email": "testuser@fakedomain.com",
@@ -28,7 +27,7 @@ fake_options = {
 }
 
 
-class EWayGatewayTestCase(TestCase):
+class TestEWayGateway(unittest.TestCase):
     def setUp(self):
         self.merchant = get_gateway("eway")
         self.merchant.test_mode = True
@@ -61,32 +60,6 @@ class EWayGatewayTestCase(TestCase):
                           "1,Do Not Honour(Test Gateway)")
         self.assertNotEquals(resp["response"].ewayTrxnNumber, "0")
         self.assertTrue(resp["response"].ewayReturnAmount, "1")
-
-    def testPaymentSuccessfulSignal(self):
-        # Since in the test mode, all transactions are
-        # failures, we need to be checking for transaction_was_unsuccessful
-        received_signals = []
-
-        def receive(sender, **kwargs):
-            received_signals.append(kwargs.get("signal"))
-
-        transaction_was_unsuccessful.connect(receive)
-
-        resp = self.merchant.purchase(1, self.credit_card,
-                                      options=fake_options)
-        self.assertEquals(received_signals, [transaction_was_unsuccessful])
-
-    def testPaymentUnSuccessfulSignal(self):
-        received_signals = []
-
-        def receive(sender, **kwargs):
-            received_signals.append(kwargs.get("signal"))
-
-        transaction_was_unsuccessful.connect(receive)
-
-        resp = self.merchant.purchase(6, self.credit_card,
-                                      options=fake_options)
-        self.assertEquals(received_signals, [transaction_was_unsuccessful])
 
     def testCreditCardExpired(self):
         resp = self.merchant.purchase(8, self.credit_card,

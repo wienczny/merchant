@@ -1,12 +1,20 @@
-from billing import CreditCard
-from billing import Gateway, GatewayNotConfigured
-from billing.signals import transaction_was_successful, transaction_was_unsuccessful
-from billing.utils.credit_card import Visa, MasterCard, DinersClub, JCB, AmericanExpress, InvalidCard
+import os
+
+from merchant import CreditCard
+from merchant import Gateway, GatewayNotConfigured
+from merchant.utils.credit_card import (Visa, MasterCard,
+                                        DinersClub, JCB,
+                                        AmericanExpress, InvalidCard)
 
 from eway_api.client import RebillEwayClient, DirectPaymentClient
-from eway_api.client import REBILL_TEST_URL, REBILL_LIVE_URL, HOSTED_TEST_URL, HOSTED_LIVE_URL, DIRECT_PAYMENT_TEST_URL, DIRECT_PAYMENT_LIVE_URL
-
-from django.conf import settings
+from eway_api.client import (
+    REBILL_TEST_URL,
+    REBILL_LIVE_URL,
+    HOSTED_TEST_URL,
+    HOSTED_LIVE_URL,
+    DIRECT_PAYMENT_TEST_URL,
+    DIRECT_PAYMENT_LIVE_URL
+)
 
 
 class EwayGateway(Gateway):
@@ -16,14 +24,9 @@ class EwayGateway(Gateway):
     homepage_url = "https://eway.com.au/"
     display_name = "eWay"
 
-    def __init__(self):
-        self.test_mode = getattr(settings, 'MERCHANT_TEST_MODE', True)
-        merchant_settings = getattr(settings, "MERCHANT_SETTINGS")
-        if not merchant_settings or not merchant_settings.get("eway"):
-            raise GatewayNotConfigured("The '%s' gateway is not correctly "
-                                       "configured." % self.display_name)
-        eway_settings = merchant_settings["eway"]
-        self.customer_id = eway_settings['CUSTOMER_ID']
+    def __init__(self, settings):
+        self.test_mode = os.getenv('MERCHANT_TEST_MODE', True)
+        self.customer_id = settings['CUSTOMER_ID']
         if self.test_mode:
             self.rebill_url = REBILL_TEST_URL
             self.hosted_url = HOSTED_TEST_URL
@@ -33,8 +36,8 @@ class EwayGateway(Gateway):
             self.hosted_url = HOSTED_LIVE_URL
             self.direct_payment_url = DIRECT_PAYMENT_LIVE_URL
 
-        self.eway_username = eway_settings['USERNAME']
-        self.eway_password = eway_settings['PASSWORD']
+        self.eway_username = settings['USERNAME']
+        self.eway_password = settings['PASSWORD']
 
     def add_creditcard(self, hosted_customer, credit_card):
         """
@@ -171,20 +174,11 @@ class EwayGateway(Gateway):
         )
 
         if not hasattr(pymt_response, "ewayTrxnStatus"):
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="purchase",
-                                              response=pymt_response)
             return {"status": "FAILURE", "response": pymt_response}
 
         if pymt_response.ewayTrxnStatus == "False":
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="purchase",
-                                              response=pymt_response)
             return {"status": "FAILURE", "response": pymt_response}
 
-        transaction_was_successful.send(sender=self,
-                                        type="purchase",
-                                        response=pymt_response)
         return {"status": "SUCCESS", "response": pymt_response}
 
     def authorize(self, money, credit_card, options=None):
@@ -300,9 +294,6 @@ class EwayGateway(Gateway):
 
             # Handler error in create_rebill_customer response
             if rebill_customer_response.ErrorSeverity:
-                transaction_was_unsuccessful.send(sender=self,
-                                                  type="recurringCreateRebill",
-                                                  response=rebill_customer_response)
                 error_response = rebill_customer_response
                 raise
 
@@ -320,17 +311,11 @@ class EwayGateway(Gateway):
 
                 # Handler error in create_rebill_event response
                 if rebill_event_response.ErrorSeverity:
-                    transaction_was_unsuccessful.send(sender=self,
-                                                      type="recurringRebillEvent",
-                                                      response=rebill_event_response)
                     error_response = rebill_event_response
                     raise
 
                 rebill_event_response_list.append(rebill_event_response)
 
-            transaction_was_successful.send(sender=self,
-                                            type="recurring",
-                                            response=rebill_event_response_list)
         except Exception as e:
             error_response['exception'] = e
             return {"status": "Failure", "response": error_response}
@@ -363,14 +348,8 @@ class EwayGateway(Gateway):
 
         # Handler error in delete_rebill_customer response
         if delete_rebill_response.ErrorSeverity:
-            transaction_was_unsuccessful.send(sender=self,
-                                              type="recurringDeleteRebill",
-                                              response=delete_rebill_response)
             return {"status": "FAILURE", "response": delete_rebill_response}
 
-        transaction_was_successful.send(sender=self,
-                                        type="recurring",
-                                        response=delete_rebill_response)
         return {"status": "SUCCESS", "response": delete_rebill_response}
 
     def store(self, creditcard, options=None):

@@ -57,4 +57,3 @@ class TestAuthorizeNetAIMGateway(unittest.TestCase):
             self.assertEquals(resp["response"].response_reason_code, '1')
             self.assertTrue(error_text in resp["response"].response_reason_text)
             self.assertTrue(isinstance(resp["response"], MockAuthorizeAIMResponse))
-

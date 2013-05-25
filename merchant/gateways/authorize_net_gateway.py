@@ -275,6 +275,8 @@ class AuthorizeNetGateway(Gateway):
 
         response = self.commit("AUTH_CAPTURE", money, post)
         status = "SUCCESS"
+        if response.response_code != 1:
+            status = "FAILURE"
         return {"status": status, "response": response}
 
     def authorize(self, money, credit_card, options=None):
@@ -293,6 +295,8 @@ class AuthorizeNetGateway(Gateway):
 
         response = self.commit("AUTH_ONLY", money, post)
         status = "SUCCESS"
+        if response.response_code != 1:
+            status = "FAILURE"
         return {"status": status, "response": response}
 
     def capture(self, money, authorization, options=None):
@@ -306,6 +310,8 @@ class AuthorizeNetGateway(Gateway):
 
         response = self.commit("PRIOR_AUTH_CAPTURE", money, post)
         status = "SUCCESS"
+        if response.response_code != 1:
+            status = "FAILURE"
         return {"status": status, "response": response}
 
     def void(self, identification, options=None):
@@ -320,6 +326,8 @@ class AuthorizeNetGateway(Gateway):
         # commit ignores the money argument for void, so we set it None
         response = self.commit("VOID", None, post)
         status = "SUCCESS"
+        if response.response_code != 1:
+            status = "FAILURE"
         return {"status": status, "response": response}
 
     def credit(self, money, identification, options=None):
@@ -335,6 +343,8 @@ class AuthorizeNetGateway(Gateway):
 
         response = self.commit("CREDIT", money, post)
         status = "SUCCESS"
+        if response.response_code != 1:
+            status = "FAILURE"
         return {"status": status, "response": response}
 
     def recurring(self, money, credit_card, options):

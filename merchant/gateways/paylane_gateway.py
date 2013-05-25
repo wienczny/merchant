@@ -6,7 +6,6 @@ import datetime
 from suds.client import Client
 from suds.cache import ObjectCache
 from collections import namedtuple
-from django.utils.translation import ugettext_lazy as _
 
 from merchant import Gateway, GatewayNotConfigured
 from merchant.utils.credit_card import (CreditCard,

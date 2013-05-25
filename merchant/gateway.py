@@ -115,12 +115,7 @@ def get_gateway(gateway, *args, **kwargs):
         # Let's actually load it (it's not in the cache)
         gateway_filename = "%s_gateway" % gateway
         gateway_module = None
-        lookup_path = ['merchant']
-        lookup_path.extend(sys.path)
-        for pkg in lookup_path:
-            gateway_module = import_module(".gateways.%s" % gateway_filename, package=pkg)
-        if not gateway_module:
-            raise GatewayModuleNotFound("Missing gateway: %s" % (gateway))
+        gateway_module = import_module("merchant.gateways.%s" % gateway_filename)
         gateway_class_name = "".join(gateway_filename.title().split("_"))
         try:
             clazz = getattr(gateway_module, gateway_class_name)

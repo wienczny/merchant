@@ -4,13 +4,12 @@ import datetime
 
 from collections import namedtuple
 
-from django.template.loader import render_to_string
-
 from merchant import Gateway, GatewayNotConfigured
 from merchant.utils.credit_card import (
     InvalidCard, Visa, MasterCard, Discover, AmericanExpress
 )
 from merchant.utils.xml_parser import parseString, nodeToDic
+
 
 API_VERSION = '3.1'
 DELIM_CHAR = ','
@@ -106,6 +105,39 @@ def save_authorize_response(response):
     data['shipping_country'] = response[31]
     data['card_code_response'] = response[38]
     return AuthorizeAIMResponse(**data)
+
+
+arb_create_subscription_template = """
+<?xml version="1.0" encoding="utf-8"?>
+<ARBCreateSubscriptionRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+    <merchantAuthentication>
+        <name>{{ auth_login }}</name>
+        <transactionKey>{{ auth_key }}</transactionKey>
+    </merchantAuthentication>
+    <subscription>
+        <name>{{ sub_name }}</name>
+        <paymentSchedule>
+            <interval>
+                <length>{{ interval_length }}</length>
+                <unit>{{ interval_unit }}</unit>
+            </interval>
+            <startDate>{{ start_date }}</startDate>
+            <totalOccurrences>{{ total_occurrences }}</totalOccurrences>
+        </paymentSchedule>
+        <amount>{{ amount }}</amount>
+        <payment>
+            <creditCard>
+                <cardNumber>{{ card_number}}</cardNumber>
+                <expirationDate>{{ exp_date }}</expirationDate>
+            </creditCard>
+        </payment>
+        <billTo>
+            <firstName>{{ first_name }}</firstName>
+            <lastName>{{ last_name }}</lastName>
+        </billTo>
+    </subscription>
+</ARBCreateSubscriptionRequest>
+"""
 
 
 class AuthorizeNetGateway(Gateway):
@@ -325,7 +357,8 @@ class AuthorizeNetGateway(Gateway):
         template_vars['first_name'] = credit_card.first_name
         template_vars['last_name'] = credit_card.last_name
 
-        xml = render_to_string('billing/arb/arb_create_subscription.xml', template_vars)
+        for k, v in template_vars:
+            xml = xml.replace("{{ %s }}" % k, v)
 
         if self.test_mode:
             url = self.arb_test_url

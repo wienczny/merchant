@@ -66,6 +66,9 @@ class BeanstreamGateway(Gateway):
             kwargs["hash_algorithm"] = settings["HASH_ALGORITHM"]
             kwargs["hashcode"] = settings["HASHCODE"]
 
+        if hasattr(settings, "PAYMENT_PROFILE_PASSCODE"):
+            kwargs["PAYMENT_PROFILE_PASSCODE"] = settings["PAYMENT_PROFILE_PASSCODE"]
+
         self.beangw.configure(
             merchant_id,
             login_company,

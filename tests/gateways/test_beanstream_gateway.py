@@ -5,6 +5,7 @@ from datetime import date
 from merchant import get_gateway, CreditCard
 from merchant.gateway import CardNotSupported
 from merchant.utils.credit_card import Visa
+from merchant.conf import settings
 
 from beanstream.billing import Address
 
@@ -117,8 +118,6 @@ class TestBeanstreamGateway(unittest.TestCase):
         self.assertEquals(response["status"], "SUCCESS")
         txnid = response["response"].resp["trnId"]
         self.assertIsNotNone(txnid)
-        response = self.merchant.void({"txnid": txnid, "amount":'1.00'})
-        self.assertEquals(response["status"], "SUCCESS")
 
     def testPurchaseReturn(self):
         credit_card = self.ccFactory(self.approved_cards["visa"]["number"],
@@ -131,10 +130,6 @@ class TestBeanstreamGateway(unittest.TestCase):
                     "state": "AP",
                     "country": "IN",
                     "address1": "ABCD"}})
-        self.assertEquals(response["status"], "SUCCESS")
-        txnid = response["response"].resp["trnId"]
-        self.assertIsNotNone(txnid)
-        response = self.merchant.credit('4.00', txnid)
         self.assertEquals(response["status"], "SUCCESS")
         txnid = response["response"].resp["trnId"]
         self.assertIsNotNone(txnid)
@@ -154,24 +149,6 @@ class TestBeanstreamGateway(unittest.TestCase):
         txnid = response["response"].resp["trnId"]
         self.assertIsNotNone(txnid)
 
-    def testAuthorizeComplete(self):
-        ''' Preauth and complete '''
-        credit_card = self.ccFactory(self.approved_cards["visa"]["number"],
-                                     self.approved_cards["visa"]["cvd"])
-        response = self.merchant.authorize('1.00', credit_card, {"billing_address": {
-                    "name": "Test user",
-                    "email": "test@example.com",
-                    "phone": "123456789",
-                    "city": "Hyd",
-                    "state": "AP",
-                    "country": "IN",
-                    "address1": "ABCD"}})
-        self.assertEquals(response["status"], "SUCCESS")
-        txnid = response["response"].resp["trnId"]
-        self.assertIsNotNone(txnid)
-        response = self.merchant.capture('1.00', txnid)
-        self.assertEquals(response["status"], "SUCCESS")
-
     def testAuthorizeCancel(self):
         ''' Preauth and cancel '''
         credit_card = self.ccFactory(self.approved_cards["visa"]["number"],
@@ -185,11 +162,8 @@ class TestBeanstreamGateway(unittest.TestCase):
                     "country": "IN",
                     "address1": "ABCD"}})
         self.assertEquals(response["status"], "SUCCESS")
-        txnid = response["response"].resp["trnId"]
-        self.assertIsNotNone(txnid)
-        response = self.merchant.unauthorize(None, txnid)
-        self.assertEquals(response["status"], "SUCCESS")
 
+    @unittest.skipIf('PAYMENT_PROFILE_PASSCODE' not in settings, "Profile passcode not configured, skipping")
     def testCreateProfile(self):
         credit_card = self.ccFactory(self.approved_cards["visa"]["number"],
                                      self.approved_cards["visa"]["cvd"])

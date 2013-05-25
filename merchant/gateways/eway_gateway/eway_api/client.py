@@ -1,10 +1,10 @@
 import requests
+
 from xml.dom.minidom import parseString
 from xml.etree.ElementTree import Element, tostring
 from suds.client import Client, WebFault
 
-from billing.utils.xml_parser import nodeToDic
-
+from merchant.utils.xml_parser import nodeToDic
 
 # Token Payments urls( Web Service ) : http://www.eway.com.au/developers/api/token
 HOSTED_TEST_URL = "https://www.eway.com.au/gateway/ManagedPaymentService/test/managedCreditCardPayment.asmx?WSDL"

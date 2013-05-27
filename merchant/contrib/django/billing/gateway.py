@@ -1,10 +1,16 @@
 from django.utils.importlib import import_module
-from django.conf import settings
+
+from merchant.contrib.django.billing.conf import settings
+from merchant.gateway import (
+    GatewayModuleNotFound,
+    GatewayNotConfigured,
+    InvalidData,
+    Gateway
+)
 from merchant.utils.credit_card import CardNotSupported
-from merchant.gateway import GatewayModuleNotFound, GatewayNotConfigured, \
-    InvalidData, Gateway
 
 gateway_cache = {}
+
 
 def get_gateway(gateway, *args, **kwargs):
     """
@@ -23,11 +29,7 @@ def get_gateway(gateway, *args, **kwargs):
         # Let's actually load it (it's not in the cache)
         gateway_filename = "%s_gateway" % gateway
         gateway_module = None
-        for app in settings.INSTALLED_APPS:
-            try:
-                gateway_module = import_module(".gateways.%s" % gateway_filename, package=app)
-            except ImportError:
-                pass
+        gateway_module = import_module("merchant.gateways.%s" % gateway_filename)
         if not gateway_module:
             raise GatewayModuleNotFound("Missing gateway: %s" % (gateway))
         gateway_class_name = "".join(gateway_filename.title().split("_"))
@@ -38,4 +40,5 @@ def get_gateway(gateway, *args, **kwargs):
         gateway_cache[gateway] = clazz
     # We either hit the cache or load our class object, let's return an instance
     # of it.
+    kwargs.setdefault("settings", settings[gateway])
     return clazz(*args, **kwargs)

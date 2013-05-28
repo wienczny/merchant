@@ -2,13 +2,15 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from merchant import Gateway, GatewayNotConfigured
-from merchant.utils.credit_card import CreditCard
+from merchant.utils.credit_card import (Visa, MasterCard,
+                                        AmericanExpress, Discover, CreditCard)
 
 
 class ChargebeeGateway(Gateway):
 
     display_name = "Chargebee"
     homepage_url = "https://chargebee.com/"
+    supported_cardtypes = [Visa, MasterCard, AmericanExpress, Discover]
 
     def __init__(self, settings):
         self.chargebee_api_key = settings["API_KEY"]

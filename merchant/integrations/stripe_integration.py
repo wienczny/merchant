@@ -1,4 +1,4 @@
-from merchant import Integration, get_gateway, IntegrationNotConfigured
+from merchant import Integration
 
 
 class StripeIntegration(Integration):

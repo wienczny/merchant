@@ -3,6 +3,7 @@ from django.conf.urls import patterns, url
 
 from merchant.integrations.stripe_integration import StripeIntegration as Integration
 from merchant.contrib.django.billing.forms.stripe_forms import StripeForm
+from merchant.contrib.django.billing.gateway import get_gateway
 
 
 class StripeIntegration(Integration):
@@ -10,6 +11,7 @@ class StripeIntegration(Integration):
     template = "billing/stripe.html"
 
     def __init__(self, settings):
+        self.gateway = get_gateway("stripe")
         self.publishable_key = settings['PUBLISHABLE_KEY']
 
     def form_class(self):
@@ -26,7 +28,7 @@ class StripeIntegration(Integration):
 
     def get_urls(self):
         urlpatterns = patterns('',
-           url('^stripe_token/$', self.transaction, name="stripe_transaction")
+           url('^merchant/stripe/$', self.transaction, name="stripe_transaction")
         )
         return urlpatterns
 

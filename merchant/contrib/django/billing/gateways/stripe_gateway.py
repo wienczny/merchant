@@ -1,10 +1,15 @@
+import stripe
+
+from django.conf import settings
+
 from merchant import GatewayNotConfigured
 from merchant.gateways.stripe_gateway import StripeGateway as Gateway
-from billing.signals import transaction_was_successful, transaction_was_unsuccessful
-from billing.utils.credit_card import InvalidCard, Visa, MasterCard, \
-     AmericanExpress, Discover, CreditCard
-import stripe
-from django.conf import settings
+from merchant.contrib.django.billing.signals import (
+    transaction_was_successful,
+    transaction_was_unsuccessful
+)
+from merchant.utils.credit_card import (InvalidCard, Visa, MasterCard,
+    AmericanExpress, Discover, CreditCard)
 
 
 class StripeGateway(Gateway):
@@ -13,15 +18,6 @@ class StripeGateway(Gateway):
     default_currency = "USD"
     homepage_url = "https://stripe.com/"
     display_name = "Stripe"
-
-    def __init__(self):
-        merchant_settings = getattr(settings, "MERCHANT_SETTINGS")
-        if not merchant_settings or not merchant_settings.get("stripe"):
-            raise GatewayNotConfigured("The '%s' gateway is not correctly "
-                                       "configured." % self.display_name)
-        stripe_settings = merchant_settings["stripe"]
-        stripe.api_key = stripe_settings['API_KEY']
-        self.stripe = stripe
 
     def purchase(self, amount, credit_card, options=None):
         response = super(StripeGateway, self).purchase(amount,

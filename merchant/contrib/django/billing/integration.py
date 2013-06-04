@@ -9,14 +9,14 @@ from merchant.integration import IntegrationModuleNotFound, \
 integration_cache = {}
 
 
-def get_integration(integration, *args, **kwargs):
+def get_integration(integration, module_path="merchant.contrib.django.billing.integrations", *args, **kwargs):
     """Return a integration instance specified by `integration` name"""
 
     klass = integration_cache.get(integration, None)
 
     if not klass:
         integration_filename = "%s_integration" % integration
-        integration_module = import_module("merchant.contrib.django.billing.integrations.%s" % integration_filename)
+        integration_module = import_module("%s.%s" % (module_path, integration_filename))
         if not integration_module:
             raise IntegrationModuleNotFound("Missing integration: %s" % (integration))
         integration_class_name = "".join(integration_filename.title().split("_"))

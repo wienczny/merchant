@@ -30,6 +30,8 @@ class Integration(object):
 
     fields = {}
 
+    urls = ()
+
     def __init__(self, options=None):
         if not options:
             options = {}

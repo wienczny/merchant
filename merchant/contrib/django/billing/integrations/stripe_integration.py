@@ -9,12 +9,9 @@ from merchant.contrib.django.billing.gateway import get_gateway
 
 class StripeIntegration(Integration):
 
-    display_name = "Stripe"
-    template = "billing/stripe.html"
-
     def __init__(self, settings):
+        super(StripeIntegration, self).__init__(settings)
         self.gateway = get_gateway("stripe")
-        self.publishable_key = settings['PUBLISHABLE_KEY']
 
     def form_class(self):
         return StripeForm

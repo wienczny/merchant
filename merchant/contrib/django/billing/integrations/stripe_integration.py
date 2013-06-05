@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.conf.urls import patterns, url
+from django.core.urlresolvers import reverse_lazy
 
 from merchant.integrations.stripe_integration import StripeIntegration as Integration
 from merchant.contrib.django.billing.forms.stripe_forms import StripeForm
@@ -7,6 +8,7 @@ from merchant.contrib.django.billing.gateway import get_gateway
 
 
 class StripeIntegration(Integration):
+
     display_name = "Stripe"
     template = "billing/stripe.html"
 
@@ -28,10 +30,14 @@ class StripeIntegration(Integration):
 
     def get_urls(self):
         urlpatterns = patterns('',
-           url('^merchant/stripe/$', self.transaction, name="stripe_transaction")
+           url('^merchant/stripe/$', self.transaction, name="merchant_stripe_transaction")
         )
         return urlpatterns
 
     @property
     def urls(self):
         return self.get_urls()
+
+    @property
+    def url_name(self):
+        return reverse_lazy("merchant_stripe_transaction")

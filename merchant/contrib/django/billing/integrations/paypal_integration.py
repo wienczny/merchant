@@ -28,7 +28,7 @@ class PaypalIntegration(Integration):
         return self.form_class()(initial=self.fields)
 
     def get_urls(self):
-        urlpatterns = patterns('', (r'^', include('paypal.standard.ipn.urls')))
+        urlpatterns = patterns('', (r'^merchant/paypal/ipn', include('paypal.standard.ipn.urls')))
         return urlpatterns
 
     @property

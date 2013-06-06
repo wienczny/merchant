@@ -11,9 +11,7 @@ class OgonePaymentsIntegration(Integration):
     def __init__(self, settings, options=None):
         if not options:
             options = {}
-        bunch = Bunch()
-        bunch.update(settings)
-        self.settings = bunch
+        self.settings = Bunch(**settings)
 
     def add_fields(self, params):
         for (key, val) in params.iteritems():

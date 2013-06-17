@@ -1,21 +1,26 @@
-from flask import Flask, render_template, request
-from flask.ext.merchant import get_gateway, get_integration, CreditCard
 import os
 import logging
 import logging.handlers
+
+from flask import Flask, flash, render_template, request
+from merchant import get_gateway, CreditCard
+from merchant.contrib.flask.flask_merchant.integration import get_integration
+
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
 app.config.from_pyfile(os.path.join(curr_dir, "settings.py"))
 
-file_handler = logging.handlers.RotatingFileHandler('/tmp/flask.log') 
+file_handler = logging.handlers.RotatingFileHandler('/tmp/flask.log')
 file_handler.setLevel(logging.WARNING)
 app.logger.addHandler(file_handler)
+
 
 @app.route("/")
 def main():
     return render_template("billing/main.html")
+
 
 @app.route("/gateway/stripe/", methods=["GET", "POST"])
 def s2s_stripe():
@@ -33,14 +38,14 @@ def s2s_stripe():
             response = stripe.purchase(amount, credit_card)
         return render_template("billing/gateway/stripe.html")
 
+
 @app.route("/offline/stripe/", methods=["GET", "POST"])
 def stripe_js():
     with app.app_context():
-        integration = get_integration("stripe_example")
+        integration = get_integration("stripe", module_path="custom.integrations")
         return render_template("billing/integration/stripe.html",
                                integration=integration)
 
 
 if __name__ == '__main__':
-#    app.run(host="0.0.0.0", port=8000, debug=True)
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8000, debug=True)

@@ -1,9 +1,11 @@
-from flask.ext.merchant.integrations.stripe_integration import StripeIntegration
-from flask import current_app, request, render
+from flask.ext.merchant.integrations.stripe_integration import StripeIntegration as Integration
+from flask import current_app, request, render_template
 
-class StripeExampleIntegration(StripeIntegration):
+
+class StripeIntegration(Integration):
+
     def __init__(self, *args, **kwargs):
-        super(StripeExampleIntegration, self).__init__(*args, **kwargs)
+        super(StripeIntegration, self).__init__(*args, **kwargs)
         self.register_urls()
 
     def transaction(self):
@@ -14,7 +16,7 @@ class StripeExampleIntegration(StripeIntegration):
             description="payinguser@example.com"
             )
         # TODO: Redirect to a success page
-        return render("billing/main.html")
+        return render_template("billing/main.html")
 
     def register_urls(self):
         current_app.add_url_rule("/offline/stripe/transaction/",

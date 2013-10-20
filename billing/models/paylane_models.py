@@ -29,7 +29,7 @@ class PaylaneAuthorization(models.Model):
     transaction = models.OneToOneField(PaylaneTransaction)
 
     def __unicode__(self):
-        return u'Authorization: %s' % (self.sale_authorization_id)
+        return 'Authorization: %s' % (self.sale_authorization_id)
 
     class Meta:
         app_label = __name__.split(".")[0]

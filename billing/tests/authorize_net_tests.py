@@ -1,5 +1,4 @@
 import mock
-import urllib2
 
 from django.test import TestCase
 
@@ -10,6 +9,10 @@ from billing.gateway import CardNotSupported
 from billing.gateways.authorize_net_gateway import MockAuthorizeAIMResponse
 from billing.utils.credit_card import Visa
 
+try:
+    from urllib.error import URLError
+except ImportError:
+    from urllib2 import URLError
 
 class AuthorizeNetAIMGatewayTestCase(TestCase):
     def setUp(self):
@@ -68,9 +71,9 @@ class AuthorizeNetAIMGatewayTestCase(TestCase):
         self.assertNotEquals(resp["status"], "SUCCESS")
 
     def testPurchaseURLError(self):
-        with mock.patch('billing.gateways.authorize_net_gateway.urllib2.urlopen') as mock_urlopen:
+        with mock.patch('billing.gateways.authorize_net_gateway.urlopen') as mock_urlopen:
             error_text = "Something bad happened :("
-            mock_urlopen.side_effect = urllib2.URLError(error_text)
+            mock_urlopen.side_effect = URLError(error_text)
             resp = self.merchant.purchase(1, self.credit_card)
             self.assertEquals(resp["status"], "FAILURE")
             self.assertEquals(resp["response"].response_code, 5)

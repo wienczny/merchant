@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 VERSION = '0.1'
 
 import os
@@ -5,6 +7,7 @@ import sys
 from fnmatch import fnmatchcase
 from distutils.util import convert_path
 from setuptools import setup, find_packages
+
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
@@ -21,11 +24,11 @@ standard_exclude_directories = ('.*', 'CVS', '_darcs', './build',
 # you can't import this from another package, when you don't know if
 # that package is installed yet.
 def find_package_data(
-    where='.', package='',
-    exclude=standard_exclude,
-    exclude_directories=standard_exclude_directories,
-    only_in_packages=True,
-    show_ignored=False):
+        where='.', package='',
+        exclude=standard_exclude,
+        exclude_directories=standard_exclude_directories,
+        only_in_packages=True,
+        show_ignored=False):
     """
     Return a dictionary suitable for use in ``package_data``
     in a distutils ``setup.py`` file.
@@ -66,9 +69,8 @@ def find_package_data(
                         or fn.lower() == pattern.lower()):
                         bad_name = True
                         if show_ignored:
-                            print >> sys.stderr, (
-                                "Directory %s ignored by pattern %s"
-                                % (fn, pattern))
+                            print(("Directory %s ignored by pattern %s"
+                                   % (fn, pattern)), file=sys.stderr)
                         break
                 if bad_name:
                     continue
@@ -89,14 +91,14 @@ def find_package_data(
                         or fn.lower() == pattern.lower()):
                         bad_name = True
                         if show_ignored:
-                            print >> sys.stderr, (
-                                "File %s ignored by pattern %s"
-                                % (fn, pattern))
+                            print(("File %s ignored by pattern %s"
+                                   % (fn, pattern)), file=sys.stderr)
                         break
                 if bad_name:
                     continue
-                out.setdefault(package, []).append(prefix+name)
+                out.setdefault(package, []).append(prefix + name)
     return out
+
 
 setup(
     name="django-merchant",

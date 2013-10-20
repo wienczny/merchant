@@ -34,8 +34,8 @@ class WorldPayResponse(models.Model):
     post_code = models.CharField(max_length=64)
     country_code = models.CharField(max_length=64)
     country = models.CharField(max_length=64)
-    phone = models.CharField(u'Phone number', max_length=64, blank=True)
-    fax = models.CharField(u'Fax number', max_length=64, blank=True)
+    phone = models.CharField('Phone number', max_length=64, blank=True)
+    fax = models.CharField('Fax number', max_length=64, blank=True)
     email = models.EmailField()
 
     # future pay id, for recurring payments

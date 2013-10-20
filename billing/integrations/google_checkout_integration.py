@@ -22,6 +22,7 @@ BUTTON_URL = 'https://checkout.google.com/buttons/checkout.gif?merchant_id=%(mer
 csrf_exempt_m = method_decorator(csrf_exempt)
 require_POST_m = method_decorator(require_POST)
 
+#TODO Check string usage again (str,unicode)
 
 class GoogleCheckoutIntegration(Integration):
     display_name = 'Google Checkout'
@@ -220,8 +221,8 @@ class GoogleCheckoutIntegration(Integration):
 
         for alt_tax_table in alt_tax_tables:
             alt_tax_table_node = doc.createElement('alternate-tax-table')
-            alt_tax_table_node.setAttribute('name', unicode(alt_tax_table.get('name')))
-            alt_tax_table_node.setAttribute('standalone', unicode(str(alt_tax_table.get('standalone', False)).lower()))
+            alt_tax_table_node.setAttribute('name', alt_tax_table.get('name'))
+            alt_tax_table_node.setAttribute('standalone', alt_tax_table.get('standalone', False))
             alt_tax_tables_node.appendChild(alt_tax_table_node)
 
             # if there are no rules we still want to show the element <alternate-tax-rules/>
@@ -527,7 +528,7 @@ class GoogleCheckoutIntegration(Integration):
             "shopping-cart.merchant-private-data": "private_data",
             }
 
-        for (key, val) in resp_fields.iteritems():
+        for (key, val) in resp_fields.items():
             data[val] = post_data.get(key, '')
 
         data['num_cart_items'] = len(post_data.getlist('shopping-cart.items'))
@@ -586,33 +587,33 @@ class GoogleCheckoutIntegration(Integration):
         return result
 
     def load_child_nodes(self, node, load_attributes=True, load_complex_nodes=True, is_root=False, ignore_nodes=[]):
-        result={}
+        result = {}
         if node:
             if is_root:
                 for key, value in node.attributes.items():
-                    result[str(key)] = value
+                    result[key] = value
             for n in node.childNodes:
                 if n.localName and n.localName not in ignore_nodes:
                     if load_attributes:
                         for key, value in n.attributes.items():
                             if is_root:
-                                result['%s.%s' % (str(n.localName), str(key))] = value
+                                result['%s.%s' % (n.localName, key)] = value
                             else:
-                                result['%s.%s.%s' % (str(node.localName), str(n.localName), str(key))] = value
+                                result['%s.%s.%s' % (node.localName, n.localName, key)] = value
                     if len(n.childNodes) > 1 and load_complex_nodes:
                         for key, value in self.load_child_nodes(n, ignore_nodes=ignore_nodes).items():
                             if is_root:
                                 result[key] = value
                             else:
-                                result['%s.%s' % (str(node.localName), str(key))] = value
+                                result['%s.%s' % (node.localName, key)] = value
                     elif n.firstChild:
                         if is_root:
-                            result[str(n.localName)] = n.firstChild.data
+                            result[n.localName] = n.firstChild.data
                         else:
-                            result['%s.%s' % (str(node.localName), str(n.localName))] = n.firstChild.data
+                            result['%s.%s' % (node.localName, n.localName)] = n.firstChild.data
                     else:
                         if is_root:
-                            result[str(n.localName)] = ""
+                            result[n.localName] = ""
                         else:
-                            result['%s.%s' % (str(node.localName), str(n.localName))] = ""
+                            result['%s.%s' % (node.localName, n.localName)] = ""
         return result

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # vim:tabstop=4:expandtab:sw=4:softtabstop=4
+from __future__ import unicode_literals
 from django.utils.translation import ugettext_lazy as _
 
 # List taken from http://www.iso.org/iso/english_country_names_and_code_elements

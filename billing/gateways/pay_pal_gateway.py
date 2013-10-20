@@ -82,7 +82,7 @@ class PayPalGateway(Gateway):
             transaction_was_successful.send(sender=self,
                                             type="purchase",
                                             response=response)
-        except PayPalFailure, e:
+        except PayPalFailure as e:
             transaction_was_unsuccessful.send(sender=self,
                                               type="purchase",
                                               response=e)
@@ -130,7 +130,7 @@ class PayPalGateway(Gateway):
             transaction_was_successful.send(sender=self,
                                             type="purchase",
                                             response=response)
-        except PayPalFailure, e:
+        except PayPalFailure as e:
             transaction_was_unsuccessful.send(sender=self,
                                               type="purchase",
                                               response=e)

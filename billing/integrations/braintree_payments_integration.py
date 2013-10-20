@@ -4,12 +4,10 @@ from django.views.decorators.http import require_GET
 from billing.signals import transaction_was_successful, transaction_was_unsuccessful
 from django.conf.urls import patterns, url
 import braintree
-import urllib
 from django.core.urlresolvers import reverse
 from billing.forms.braintree_payments_forms import BraintreePaymentsForm
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-
 
 class BraintreePaymentsIntegration(Integration):
     display_name = "Braintree Transparent Redirect"
@@ -71,7 +69,7 @@ class BraintreePaymentsIntegration(Integration):
         return urlpatterns
 
     def add_fields(self, params):
-        for (key, val) in params.iteritems():
+        for (key, val) in params.items():
             if isinstance(val, dict):
                 new_params = {}
                 for k in val:

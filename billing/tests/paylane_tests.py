@@ -51,7 +51,7 @@ class PaylaneTestCase(TestCase):
         options['customer'] = self.customer
         options['product'] = {}
         res = self.merchant.purchase(1.0, credit_card, options=options)
-        self.assertEqual(res['status'], 'SUCCESS', unicode(res['response']))
+        self.assertEqual(res['status'], 'SUCCESS', res['response'])
         self.assertTrue('transaction' in res['response'])
         self.assertFalse('authorization' in res['response'])
 
@@ -61,7 +61,7 @@ class PaylaneTestCase(TestCase):
         options['customer'] = self.customer
         options['product'] = {}
         res = self.merchant.purchase(float(PaylaneError.ERR_CARD_EXPIRED), credit_card, options=options)
-        self.assertEqual(res['status'], 'FAILURE', unicode(res['response']))
+        self.assertEqual(res['status'], 'FAILURE', res['response'])
         self.assertTrue('transaction' in res['response'])
         self.assertFalse('authorization' in res['response'])
         self.assertTrue('error' in res['response'])
@@ -73,7 +73,7 @@ class PaylaneTestCase(TestCase):
         options['customer'] = self.customer
         options['product'] = self.product
         res = self.merchant.recurring(1.0, credit_card, options=options)
-        self.assertEqual(res['status'], 'SUCCESS', unicode(res['response']))
+        self.assertEqual(res['status'], 'SUCCESS', res['response'])
         self.assertTrue('transaction' in res['response'])
         self.assertTrue('authorization' in res['response'])
         self.assertTrue(res['response']['authorization'].sale_authorization_id > 0)
@@ -84,7 +84,7 @@ class PaylaneTestCase(TestCase):
         options['customer'] = self.customer
         options['product'] = self.product
         res = self.merchant.recurring(float(PaylaneError.ERR_CARD_EXPIRED), credit_card, options=options)
-        self.assertEqual(res['status'], 'FAILURE', unicode(res['response']))
+        self.assertEqual(res['status'], 'FAILURE', res['response'])
         self.assertTrue('transaction' in res['response'])
         self.assertFalse('authorization' in res['response'])
         self.assertTrue('error' in res['response'])
@@ -96,13 +96,13 @@ class PaylaneTestCase(TestCase):
         options['customer'] = self.customer
         options['product'] = self.product
         res = self.merchant.recurring(1.0, credit_card, options=options)
-        self.assertEqual(res['status'], 'SUCCESS', unicode(res['response']))
+        self.assertEqual(res['status'], 'SUCCESS', res['response'])
         self.assertTrue('transaction' in res['response'])
         self.assertTrue('authorization' in res['response'])
         self.assertTrue(res['response']['authorization'].sale_authorization_id > 0)
 
         bill1 = self.merchant.bill_recurring(12.0, res['response']['authorization'], 'OK recurring')
-        self.assertEqual(bill1['status'], 'SUCCESS', unicode(bill1['response']))
+        self.assertEqual(bill1['status'], 'SUCCESS', bill1['response'])
         self.assertTrue('transaction' in bill1['response'])
         self.assertTrue('authorization' in bill1['response'])
 
@@ -112,18 +112,18 @@ class PaylaneTestCase(TestCase):
         options['customer'] = self.customer
         options['product'] = self.product
         res = self.merchant.recurring(1.0, credit_card, options=options)
-        self.assertEqual(res['status'], 'SUCCESS', unicode(res['response']))
+        self.assertEqual(res['status'], 'SUCCESS', res['response'])
         self.assertTrue('transaction' in res['response'])
         self.assertTrue('authorization' in res['response'])
         self.assertTrue(res['response']['authorization'].sale_authorization_id > 0)
 
         bill1 = self.merchant.bill_recurring(12.0, res['response']['authorization'], 'OK recurring')
-        self.assertEqual(bill1['status'], 'SUCCESS', unicode(bill1['response']))
+        self.assertEqual(bill1['status'], 'SUCCESS', bill1['response'])
         self.assertTrue('transaction' in bill1['response'])
         self.assertTrue('authorization' in bill1['response'])
 
         bill2 = self.merchant.bill_recurring(float(PaylaneError.ERR_RESALE_WITH_CHARGEBACK), bill1['response']['authorization'], 'Fail recurring')
-        self.assertEqual(bill2['status'], 'FAILURE', unicode(bill2['response']))
+        self.assertEqual(bill2['status'], 'FAILURE', bill2['response'])
         self.assertTrue('transaction' in bill2['response'])
         self.assertTrue('error' in bill2['response'])
         self.assertEqual(bill2['response']['error'].error_code, PaylaneError.ERR_RESALE_WITH_CHARGEBACK)
@@ -134,7 +134,7 @@ class PaylaneTestCase(TestCase):
         options['customer'] = self.customer
         options['product'] = self.product
         res = self.merchant.authorize(1.0, credit_card, options=options)
-        self.assertEqual(res['status'], 'SUCCESS', unicode(res['response']))
+        self.assertEqual(res['status'], 'SUCCESS', res['response'])
         self.assertTrue('transaction' in res['response'])
         self.assertTrue('authorization' in res['response'])
         self.assertTrue(res['response']['authorization'].sale_authorization_id > 0)
@@ -145,7 +145,7 @@ class PaylaneTestCase(TestCase):
         options['customer'] = self.customer
         options['product'] = self.product
         res = self.merchant.authorize(float(PaylaneError.ERR_CARD_EXPIRED), credit_card, options=options)
-        self.assertEqual(res['status'], 'FAILURE', unicode(res['response']))
+        self.assertEqual(res['status'], 'FAILURE', res['response'])
         self.assertTrue('transaction' in res['response'])
         self.assertFalse('authorization' in res['response'])
         self.assertTrue('error' in res['response'])
@@ -157,13 +157,13 @@ class PaylaneTestCase(TestCase):
         options['customer'] = self.customer
         options['product'] = self.product
         res = self.merchant.authorize(36.0, credit_card, options=options)
-        self.assertEqual(res['status'], 'SUCCESS', unicode(res['response']))
+        self.assertEqual(res['status'], 'SUCCESS', res['response'])
         self.assertTrue('transaction' in res['response'])
         self.assertTrue('authorization' in res['response'])
         self.assertTrue(res['response']['authorization'].sale_authorization_id > 0)
 
         bill1 = self.merchant.capture(36.0, res['response']['authorization'], options)
-        self.assertEqual(bill1['status'], 'SUCCESS', unicode(bill1['response']))
+        self.assertEqual(bill1['status'], 'SUCCESS', bill1['response'])
         self.assertTrue('transaction' in bill1['response'])
         self.assertTrue('authorization' in bill1['response'])
 
@@ -173,13 +173,13 @@ class PaylaneTestCase(TestCase):
         options['customer'] = self.customer
         options['product'] = self.product
         res = self.merchant.authorize(1.0, credit_card, options=options)
-        self.assertEqual(res['status'], 'SUCCESS', unicode(res['response']))
+        self.assertEqual(res['status'], 'SUCCESS', res['response'])
         self.assertTrue('transaction' in res['response'])
         self.assertTrue('authorization' in res['response'])
         self.assertTrue(res['response']['authorization'].sale_authorization_id > 0)
 
         bill2 = self.merchant.capture(float(PaylaneError.ERR_RESALE_WITH_CHARGEBACK), res['response']['authorization'], options)
-        self.assertEqual(bill2['status'], 'FAILURE', unicode(bill2['response']))
+        self.assertEqual(bill2['status'], 'FAILURE', bill2['response'])
         self.assertTrue('transaction' in bill2['response'])
         self.assertTrue('error' in bill2['response'])
         self.assertEqual(bill2['response']['error'].error_code, 443)

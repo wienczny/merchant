@@ -12,7 +12,11 @@ from django.template import RequestContext
 from django.core.urlresolvers import reverse
 import hashlib
 import hmac
-import urllib
+
+try:
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import urlencode
 
 csrf_exempt_m = method_decorator(csrf_exempt)
 require_POST_m = method_decorator(require_POST)
@@ -75,12 +79,12 @@ class AuthorizeNetDpmIntegration(Integration):
                                             type="sale",
                                             response=result)
             redirect_url = "%s?%s" % (request.build_absolute_uri(reverse("authorize_net_success_handler")),
-                                     urllib.urlencode({"response": result,
+                                     urlencode({"response": result,
                                                        "transaction_id": request.POST["x_trans_id"]}))
             return render_to_response("billing/authorize_net_relay_snippet.html",
                                       {"redirect_url": redirect_url})
         redirect_url = "%s?%s" % (request.build_absolute_uri(reverse("authorize_net_failure_handler")),
-                                 urllib.urlencode({"response": result}))
+                                 urlencode({"response": result}))
         transaction_was_unsuccessful.send(sender=self,
                                           type="sale",
                                           response=result)

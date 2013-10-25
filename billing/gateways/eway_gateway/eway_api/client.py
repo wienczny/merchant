@@ -1,3 +1,4 @@
+from __future__ import print_function
 import requests
 from xml.dom.minidom import parseString
 from xml.etree.ElementTree import Element, tostring

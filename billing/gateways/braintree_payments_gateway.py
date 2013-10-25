@@ -1,3 +1,4 @@
+from __future__ import print_function
 from billing import Gateway, GatewayNotConfigured
 from billing.gateway import InvalidData
 from billing.signals import *

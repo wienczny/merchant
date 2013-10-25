@@ -1,4 +1,4 @@
-Django==1.5.1
+Django==1.5.4
 FormEncode==1.2.6
 bitcoin-python==0.3
 stripe==1.7.10
